@@ -1,0 +1,10 @@
+node_modules/
+dist/
+tmp/
+tmp_*/
+plan_render/
+*.pdf
+*.docx
+*.txt
+artifact.md
+build_unit*.py
