@@ -23,8 +23,11 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { unit01, courseUnits } from "./data/unit01.js";
+import { unit02, courseUnits } from "./data/unit02.js";
 import "./styles.css";
+
+const currentUnit = unit02;
+const activeUnitId = currentUnit.id;
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
 
@@ -104,16 +107,16 @@ function CourseRail({ activeLesson, setActiveLesson, mobileOpen, setMobileOpen }
         {courseUnits.map((courseUnit) => (
           <button
             key={courseUnit.id}
-            className={`unit-link ${courseUnit.id === "01" ? "is-active" : "is-muted"}`}
-            onClick={() => courseUnit.id === "01" && setMobileOpen(false)}
-            disabled={courseUnit.id !== "01"}
+            className={`unit-link ${courseUnit.id === activeUnitId ? "is-active" : "is-muted"}`}
+            onClick={() => courseUnit.id === activeUnitId && setMobileOpen(false)}
+            disabled={courseUnit.id !== activeUnitId}
           >
             <span className="unit-number">{courseUnit.id}</span>
             <span className="unit-name">
               <strong>{courseUnit.title}</strong>
               <small>{courseUnit.status}</small>
             </span>
-            {courseUnit.id === "01" ? <CheckCircle2 size={16} /> : <span className="coming-soon">Sắp có</span>}
+            {courseUnit.id === activeUnitId ? <CheckCircle2 size={16} /> : <span className="coming-soon">Sắp có</span>}
           </button>
         ))}
       </nav>
@@ -130,7 +133,7 @@ function Topbar({ showNotes, setShowNotes, setMobileOpen, onExport, exporting })
     <header className="topbar">
       <div className="breadcrumbs">
         <button className="icon-button mobile-menu" onClick={() => setMobileOpen(true)} aria-label="Mở điều hướng khóa học"><Menu size={19} /></button>
-        <span>Level 1</span><ChevronRight size={14} /><span>Unit 01</span><ChevronRight size={14} /><strong>Relationships</strong>
+        <span>Level 1</span><ChevronRight size={14} /><span>Unit {currentUnit.id}</span><ChevronRight size={14} /><strong>{currentUnit.title}</strong>
       </div>
       <div className="top-actions">
         <button className={`quiet-button ${showNotes ? "is-selected" : ""}`} onClick={() => setShowNotes((value) => !value)} aria-pressed={showNotes}>
@@ -148,9 +151,9 @@ function Hero() {
   return (
     <section className="unit-hero">
       <div className="hero-copy">
-        <div className="hero-kicker"><span className="kicker-dot" /> Unit 01 <span className="slash">/</span> Core topic</div>
-        <h1>Relationships</h1>
-        <p>Family, friendship and the language of connection. A complete Level 1 teaching route from reading strategy to confident Speaking Part 1 answers.</p>
+        <div className="hero-kicker"><span className="kicker-dot" /> Unit {currentUnit.id} <span className="slash">/</span> Core topic</div>
+        <h1>{currentUnit.title}</h1>
+        <p>{currentUnit.subtitle}</p>
         <div className="hero-tags"><span>IELTS Level 1</span><span>Target Band 5.0-5.5</span><span>Teacher-ready</span></div>
       </div>
       <div className="hero-visual" aria-hidden="true">
@@ -177,17 +180,17 @@ function UnitSnapshot() {
 }
 
 function UnitOpening() {
-  const metaRows = unit01.metadata || [];
-  const processRows = unit01.processOverview || [];
-  const languageRows = unit01.coreLanguage || [];
-  const colourRows = unit01.colourLegend || [];
+  const metaRows = currentUnit.metadata || [];
+  const processRows = currentUnit.processOverview || [];
+  const languageRows = currentUnit.coreLanguage || [];
+  const colourRows = currentUnit.colourLegend || [];
   return (
     <section className="unit-opening" aria-labelledby="unit-title">
-      <div className="opening-brand">Mindset for IELTS Foundation</div>
-      <h1 id="unit-title">Unit 01: {unit01.title}</h1>
-      <p className="opening-subtitle">{unit01.subtitle}</p>
+      <div className="opening-brand">Mindset for IELTS Level 1</div>
+      <h1 id="unit-title">Unit {currentUnit.id}: {currentUnit.title}</h1>
+      <p className="opening-subtitle">{currentUnit.subtitle}</p>
       <div className="opening-rule" />
-      <div className="opening-source">{unit01.source}</div>
+      <div className="opening-source">{currentUnit.source}</div>
       <div className="teacher-banner"><strong>Dành cho giáo viên Việt Nam | 1-1 online</strong><span>Teacher talk dùng trực tiếp bằng English; phần Cách xử lý, Quy trình và feedback là ghi chú dành cho giáo viên.</span></div>
       <DataTable block={{ label: "", headers: ["Mục", "Sắp xếp"], rows: metaRows, className: "meta-table", fill: "blue", hideHeader: true }} />
       <div className="opening-sections">
@@ -211,7 +214,7 @@ function UnitOpening() {
 function LessonTabs({ activeLesson, onSelect, isVisible }) {
   return (
     <div className={`lesson-tabs ${isVisible ? "is-scroll-visible" : "is-scroll-hidden"}`} role="tablist" aria-label="Unit lessons">
-      {unit01.lessons.map((lesson) => {
+      {currentUnit.lessons.map((lesson) => {
         const Icon = iconMap[lesson.icon] || BookOpen;
         return (
           <a key={lesson.id} id={`lesson-tab-${lesson.id}`} role="tab" aria-selected={activeLesson === lesson.id} aria-controls={`lesson-${lesson.id}`} className={`lesson-tab ${activeLesson === lesson.id ? "is-active" : ""}`} href={`#lesson-${lesson.id}`} onClick={() => onSelect(lesson.id)}>
@@ -308,19 +311,19 @@ function LessonRail({ activeLesson, onSelect }) {
     <div className="lesson-rail">
       <span className="rail-label">Chuyển đến lesson</span>
       <div className="rail-buttons">
-        {unit01.lessons.map((lesson) => <a key={lesson.id} className={activeLesson === lesson.id ? "is-active" : ""} href={`#lesson-${lesson.id}`} onClick={() => onSelect(lesson.id)}>{lesson.shortTitle}</a>)}
+        {currentUnit.lessons.map((lesson) => <a key={lesson.id} className={activeLesson === lesson.id ? "is-active" : ""} href={`#lesson-${lesson.id}`} onClick={() => onSelect(lesson.id)}>{lesson.shortTitle}</a>)}
       </div>
     </div>
   );
 }
 
 function IntegratedReview() {
-  const review = unit01.finalReview;
+  const review = currentUnit.finalReview;
   if (!review) return null;
   return (
     <section className="integrated-review" aria-labelledby="integrated-review-title">
       <div className="review-heading">
-        <div className="lesson-code">UNIT 01 / CONSOLIDATION</div>
+        <div className="lesson-code">UNIT {currentUnit.id} / CONSOLIDATION</div>
         <h2 id="integrated-review-title">INTEGRATED REVIEW</h2>
         <span>{viDuration(review.duration)}</span>
       </div>
@@ -346,7 +349,7 @@ function ExportDocument({ exportRef }) {
   return (
     <div className="pdf-export-root" ref={exportRef}>
       <UnitOpening />
-      {unit01.lessons.map((lesson) => <div className="pdf-lesson" key={lesson.id}><LessonHeader lesson={lesson} /><LessonContent lesson={lesson} showNotes={true} /></div>)}
+      {currentUnit.lessons.map((lesson) => <div className="pdf-lesson" key={lesson.id}><LessonHeader lesson={lesson} /><LessonContent lesson={lesson} showNotes={true} /></div>)}
       <IntegratedReview />
     </div>
   );
@@ -394,7 +397,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const lessonSections = unit01.lessons
+    const lessonSections = currentUnit.lessons
       .map((item) => document.getElementById(`lesson-${item.id}`))
       .filter(Boolean);
     if (!lessonSections.length || typeof IntersectionObserver === "undefined") return undefined;
@@ -415,7 +418,7 @@ function App() {
     const exportNode = exportRef.current.cloneNode(true);
     exportNode.classList.add("pdf-export-active");
     document.body.appendChild(exportNode);
-    const filename = "Mindset_for_IELTS_Level_1_Unit_01_Relationships.pdf";
+    const filename = `Mindset_for_IELTS_Level_1_Unit_${currentUnit.id}_${currentUnit.title.replace(/\s+/g, "_")}.pdf`;
     try {
       // Keep the capture surface in the viewport. html2canvas can return a blank
       // canvas when a fixed/off-screen source is rendered directly.
@@ -535,7 +538,7 @@ function App() {
           <LessonTabs activeLesson={activeLesson} onSelect={selectLesson} isVisible={lessonTabsVisible} />
           <LessonRail activeLesson={activeLesson} onSelect={selectLesson} />
           <div className="lesson-panels">
-            {unit01.lessons.map((unitLesson) => (
+            {currentUnit.lessons.map((unitLesson) => (
               <section className={`lesson-panel lesson-panel-${unitLesson.id}`} id={`lesson-${unitLesson.id}`} key={unitLesson.id}>
                 <LessonHeader lesson={unitLesson} />
                 <LessonContent lesson={unitLesson} showNotes={showNotes} />
@@ -543,7 +546,7 @@ function App() {
             ))}
           </div>
           <IntegratedReview />
-          <footer className="page-footer"><span>Mindset for IELTS · Level 1 · Unit 01</span><span>Relationships / teacher planning workspace</span></footer>
+          <footer className="page-footer"><span>Mindset for IELTS · Level 1 · Unit {currentUnit.id}</span><span>{currentUnit.title} / teacher planning workspace</span></footer>
         </main>
       </div>
       <ExportDocument exportRef={exportRef} />
