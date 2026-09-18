@@ -23,11 +23,14 @@ import {
   Target,
   X,
 } from "lucide-react";
+import { unit01 } from "./data/unit01.js";
+import { unit02 } from "./data/unit02.js";
 import { unit03, courseUnits } from "./data/unit03.js";
 import "./styles.css";
 
-const currentUnit = unit03;
-const activeUnitId = currentUnit.id;
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03 };
+const UnitContext = React.createContext(unit03);
+const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
 
@@ -88,7 +91,8 @@ function MetaPill({ icon: Icon, label, value }) {
   );
 }
 
-function CourseRail({ activeLesson, setActiveLesson, mobileOpen, setMobileOpen }) {
+function CourseRail({ activeUnitId, mobileOpen, setMobileOpen, onSelectUnit }) {
+  const availableUnits = new Set(Object.keys(unitCatalog));
   return (
     <aside className={`course-rail ${mobileOpen ? "is-open" : ""}`}>
       <div className="rail-topline">
@@ -105,19 +109,26 @@ function CourseRail({ activeLesson, setActiveLesson, mobileOpen, setMobileOpen }
       </div>
       <nav className="unit-list" aria-label="Các unit trong khóa học">
         {courseUnits.map((courseUnit) => (
+          (() => {
+            const isAvailable = availableUnits.has(courseUnit.id);
+            const isActive = courseUnit.id === activeUnitId;
+            return (
           <button
             key={courseUnit.id}
-            className={`unit-link ${courseUnit.id === activeUnitId ? "is-active" : "is-muted"}`}
-            onClick={() => courseUnit.id === activeUnitId && setMobileOpen(false)}
-            disabled={courseUnit.id !== activeUnitId}
+            className={`unit-link ${isActive ? "is-active" : isAvailable ? "is-available" : "is-muted"}`}
+            onClick={() => isAvailable && onSelectUnit(courseUnit.id)}
+            disabled={!isAvailable}
+            aria-current={isActive ? "page" : undefined}
           >
             <span className="unit-number">{courseUnit.id}</span>
             <span className="unit-name">
               <strong>{courseUnit.title}</strong>
               <small>{courseUnit.status}</small>
             </span>
-            {courseUnit.id === activeUnitId ? <CheckCircle2 size={16} /> : <span className="coming-soon">Sắp có</span>}
+            {isActive ? <CheckCircle2 size={16} /> : isAvailable ? <ArrowUpRight size={16} /> : <span className="coming-soon">Sắp có</span>}
           </button>
+            );
+          })()
         ))}
       </nav>
       <div className="rail-footer">
@@ -129,6 +140,7 @@ function CourseRail({ activeLesson, setActiveLesson, mobileOpen, setMobileOpen }
 }
 
 function Topbar({ showNotes, setShowNotes, setMobileOpen, onExport, exporting }) {
+  const currentUnit = useCurrentUnit();
   return (
     <header className="topbar">
       <div className="breadcrumbs">
@@ -148,6 +160,7 @@ function Topbar({ showNotes, setShowNotes, setMobileOpen, onExport, exporting })
 }
 
 function Hero() {
+  const currentUnit = useCurrentUnit();
   return (
     <section className="unit-hero">
       <div className="hero-copy">
@@ -180,6 +193,7 @@ function UnitSnapshot() {
 }
 
 function UnitOpening() {
+  const currentUnit = useCurrentUnit();
   const metaRows = currentUnit.metadata || [];
   const processRows = currentUnit.processOverview || [];
   const languageRows = currentUnit.coreLanguage || [];
@@ -212,6 +226,7 @@ function UnitOpening() {
 }
 
 function LessonTabs({ activeLesson, onSelect, isVisible }) {
+  const currentUnit = useCurrentUnit();
   return (
     <div className={`lesson-tabs ${isVisible ? "is-scroll-visible" : "is-scroll-hidden"}`} role="tablist" aria-label="Unit lessons">
       {currentUnit.lessons.map((lesson) => {
@@ -307,6 +322,7 @@ function LessonContent({ lesson, showNotes }) {
 }
 
 function LessonRail({ activeLesson, onSelect }) {
+  const currentUnit = useCurrentUnit();
   return (
     <div className="lesson-rail">
       <span className="rail-label">Chuyển đến lesson</span>
@@ -318,6 +334,7 @@ function LessonRail({ activeLesson, onSelect }) {
 }
 
 function IntegratedReview() {
+  const currentUnit = useCurrentUnit();
   const review = currentUnit.finalReview;
   if (!review) return null;
   return (
@@ -346,6 +363,7 @@ function IntegratedReview() {
 }
 
 function ExportDocument({ exportRef }) {
+  const currentUnit = useCurrentUnit();
   return (
     <div className="pdf-export-root" ref={exportRef}>
       <UnitOpening />
@@ -356,6 +374,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
+  const [selectedUnitId, setSelectedUnitId] = useState("03");
+  const currentUnit = unitCatalog[selectedUnitId] || unit03;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
@@ -364,6 +384,16 @@ function App() {
   const exportRef = React.useRef(null);
   const lastScrollY = React.useRef(0);
   const scrollFrame = React.useRef(null);
+
+  const selectUnit = (unitId) => {
+    const nextUnit = unitCatalog[unitId];
+    if (!nextUnit) return;
+    setSelectedUnitId(unitId);
+    setActiveLesson(nextUnit.lessons?.[0]?.id || "reading");
+    setLessonTabsVisible(true);
+    setMobileOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const selectLesson = (lessonId) => {
     setActiveLesson(lessonId);
@@ -400,7 +430,7 @@ function App() {
       if (scrollFrame.current !== null) window.cancelAnimationFrame(scrollFrame.current);
       scrollFrame.current = null;
     };
-  }, []);
+  }, [selectedUnitId]);
 
   useEffect(() => {
     const updateActiveLesson = () => {
@@ -415,7 +445,7 @@ function App() {
     updateActiveLesson();
     window.addEventListener("scroll", updateActiveLesson, { passive: true });
     return () => window.removeEventListener("scroll", updateActiveLesson);
-  }, []);
+  }, [selectedUnitId]);
 
   const exportPdf = async () => {
     if (!exportRef.current || exporting) return;
@@ -532,9 +562,10 @@ function App() {
   };
 
   return (
+    <UnitContext.Provider value={currentUnit}>
     <div className="app-shell">
       <div className={`mobile-scrim ${mobileOpen ? "is-visible" : ""}`} onClick={() => setMobileOpen(false)} />
-      <CourseRail activeLesson={activeLesson} setActiveLesson={setActiveLesson} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
+      <CourseRail activeUnitId={currentUnit.id} mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} onSelectUnit={selectUnit} />
       <div className="workspace">
         <Topbar showNotes={showNotes} setShowNotes={setShowNotes} setMobileOpen={setMobileOpen} onExport={exportPdf} exporting={exporting} />
         <main className="page-content" id="print-root">
@@ -556,6 +587,7 @@ function App() {
       </div>
       <ExportDocument exportRef={exportRef} />
     </div>
+    </UnitContext.Provider>
   );
 }
 
