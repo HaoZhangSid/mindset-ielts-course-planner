@@ -23,10 +23,10 @@ import {
   Target,
   X,
 } from "lucide-react";
-import { unit02, courseUnits } from "./data/unit02.js";
+import { unit03, courseUnits } from "./data/unit03.js";
 import "./styles.css";
 
-const currentUnit = unit02;
+const currentUnit = unit03;
 const activeUnitId = currentUnit.id;
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -158,10 +158,10 @@ function Hero() {
       </div>
       <div className="hero-visual" aria-hidden="true">
         <div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
-        <div className="family-node node-main"><span>R</span><small>relationships</small></div>
-        <div className="family-node node-a"><span>F</span><small>family</small></div>
-        <div className="family-node node-b"><span>W</span><small>wellbeing</small></div>
-        <div className="family-node node-c"><span>C</span><small>community</small></div>
+        <div className="family-node node-main"><span>E</span><small>education</small></div>
+        <div className="family-node node-a"><span>W</span><small>work</small></div>
+        <div className="family-node node-b"><span>S</span><small>skills</small></div>
+        <div className="family-node node-c"><span>L</span><small>learning</small></div>
         <div className="connection connection-a" /><div className="connection connection-b" /><div className="connection connection-c" />
       </div>
     </section>
@@ -217,7 +217,7 @@ function LessonTabs({ activeLesson, onSelect, isVisible }) {
       {currentUnit.lessons.map((lesson) => {
         const Icon = iconMap[lesson.icon] || BookOpen;
         return (
-          <a key={lesson.id} id={`lesson-tab-${lesson.id}`} role="tab" aria-selected={activeLesson === lesson.id} aria-controls={`lesson-${lesson.id}`} className={`lesson-tab ${activeLesson === lesson.id ? "is-active" : ""}`} href={`#lesson-${lesson.id}`} onClick={() => onSelect(lesson.id)}>
+          <a key={lesson.id} id={`lesson-tab-${lesson.id}`} role="tab" aria-selected={activeLesson === lesson.id} aria-controls={`lesson-${lesson.id}`} className={`lesson-tab ${activeLesson === lesson.id ? "is-active" : ""}`} href={`#lesson-${lesson.id}`} onClick={(event) => { event.preventDefault(); onSelect(lesson.id); }}>
             <span className="lesson-tab-icon"><Icon size={17} /></span>
             <span><strong>{lesson.shortTitle}</strong><small>{lesson.exerciseRange}</small></span>
             <ChevronRight className="tab-arrow" size={15} />
@@ -311,7 +311,7 @@ function LessonRail({ activeLesson, onSelect }) {
     <div className="lesson-rail">
       <span className="rail-label">Chuyển đến lesson</span>
       <div className="rail-buttons">
-        {currentUnit.lessons.map((lesson) => <a key={lesson.id} className={activeLesson === lesson.id ? "is-active" : ""} href={`#lesson-${lesson.id}`} onClick={() => onSelect(lesson.id)}>{lesson.shortTitle}</a>)}
+        {currentUnit.lessons.map((lesson) => <a key={lesson.id} className={activeLesson === lesson.id ? "is-active" : ""} href={`#lesson-${lesson.id}`} onClick={(event) => { event.preventDefault(); onSelect(lesson.id); }}>{lesson.shortTitle}</a>)}
       </div>
     </div>
   );
@@ -368,6 +368,12 @@ function App() {
   const selectLesson = (lessonId) => {
     setActiveLesson(lessonId);
     setLessonTabsVisible(true);
+    window.requestAnimationFrame(() => {
+      const target = document.getElementById(`lesson-${lessonId}`);
+      if (!target) return;
+      const top = target.getBoundingClientRect().top + window.scrollY - 104;
+      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+    });
   };
 
   useEffect(() => {
@@ -397,19 +403,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const lessonSections = currentUnit.lessons
-      .map((item) => document.getElementById(`lesson-${item.id}`))
-      .filter(Boolean);
-    if (!lessonSections.length || typeof IntersectionObserver === "undefined") return undefined;
-    const observer = new IntersectionObserver((entries) => {
-      const visible = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((left, right) => left.boundingClientRect.top - right.boundingClientRect.top);
-      const current = visible[0]?.target?.id?.replace("lesson-", "");
+    const updateActiveLesson = () => {
+      const anchor = window.scrollY + 150;
+      const current = currentUnit.lessons
+        .map((item) => ({ item, element: document.getElementById(`lesson-${item.id}`) }))
+        .filter(({ element }) => element)
+        .filter(({ element }) => element.getBoundingClientRect().top + window.scrollY <= anchor)
+        .pop()?.item.id;
       if (current) setActiveLesson(current);
-    }, { rootMargin: "-104px 0px -56% 0px", threshold: 0 });
-    lessonSections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
+    };
+    updateActiveLesson();
+    window.addEventListener("scroll", updateActiveLesson, { passive: true });
+    return () => window.removeEventListener("scroll", updateActiveLesson);
   }, []);
 
   const exportPdf = async () => {
