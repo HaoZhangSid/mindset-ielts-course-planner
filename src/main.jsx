@@ -26,10 +26,11 @@ import {
 import { unit01 } from "./data/unit01.js";
 import { unit02 } from "./data/unit02.js";
 import { unit03, courseUnits } from "./data/unit03.js";
+import { unit04 } from "./data/unit04.js";
 import "./styles.css";
 
-const unitCatalog = { "01": unit01, "02": unit02, "03": unit03 };
-const UnitContext = React.createContext(unit03);
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04 };
+const UnitContext = React.createContext(unit04);
 const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -161,6 +162,12 @@ function Topbar({ showNotes, setShowNotes, setMobileOpen, onExport, exporting })
 
 function Hero() {
   const currentUnit = useCurrentUnit();
+  const visual = {
+    "01": [["R", "relationships"], ["F", "family"], ["W", "wellbeing"], ["C", "community"]],
+    "02": [["P", "places"], ["B", "buildings"], ["C", "cities"], ["S", "spaces"]],
+    "03": [["E", "education"], ["W", "work"], ["S", "skills"], ["L", "learning"]],
+    "04": [["F", "food"], ["C", "culture"], ["T", "taste"], ["M", "meals"]],
+  }[currentUnit.id] || [["L", "learning"], ["S", "skills"], ["T", "training"], ["G", "growth"]];
   return (
     <section className="unit-hero">
       <div className="hero-copy">
@@ -171,10 +178,10 @@ function Hero() {
       </div>
       <div className="hero-visual" aria-hidden="true">
         <div className="orbit orbit-one" /><div className="orbit orbit-two" /><div className="orbit orbit-three" />
-        <div className="family-node node-main"><span>E</span><small>education</small></div>
-        <div className="family-node node-a"><span>W</span><small>work</small></div>
-        <div className="family-node node-b"><span>S</span><small>skills</small></div>
-        <div className="family-node node-c"><span>L</span><small>learning</small></div>
+        <div className="family-node node-main"><span>{visual[0][0]}</span><small>{visual[0][1]}</small></div>
+        <div className="family-node node-a"><span>{visual[1][0]}</span><small>{visual[1][1]}</small></div>
+        <div className="family-node node-b"><span>{visual[2][0]}</span><small>{visual[2][1]}</small></div>
+        <div className="family-node node-c"><span>{visual[3][0]}</span><small>{visual[3][1]}</small></div>
         <div className="connection connection-a" /><div className="connection connection-b" /><div className="connection connection-c" />
       </div>
     </section>
@@ -182,11 +189,13 @@ function Hero() {
 }
 
 function UnitSnapshot() {
+  const currentUnit = useCurrentUnit();
+  const sourcePages = currentUnit.source?.split("·")[0] || "Student's Book";
   return (
     <section className="snapshot-grid" aria-label="Unit snapshot">
       <MetaPill icon={Clock3} label="Teaching route" value="4 lessons · 60-90 min each" />
       <MetaPill icon={Target} label="Outcomes" value="Reading, writing, listening, speaking" />
-      <MetaPill icon={FileText} label="Source pages" value="Student's Book pp. 8-23" />
+      <MetaPill icon={FileText} label="Source pages" value={sourcePages} />
       <MetaPill icon={GraduationCap} label="Class profile" value="IELTS 4.0-4.5 · Level 1" />
     </section>
   );
@@ -374,8 +383,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
-  const [selectedUnitId, setSelectedUnitId] = useState("03");
-  const currentUnit = unitCatalog[selectedUnitId] || unit03;
+  const [selectedUnitId, setSelectedUnitId] = useState("04");
+  const currentUnit = unitCatalog[selectedUnitId] || unit04;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
