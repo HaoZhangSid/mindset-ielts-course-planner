@@ -3,7 +3,7 @@ export const courseUnits = [
   { id: "02", title: "Places and Buildings", status: "Đã có" },
   { id: "03", title: "Education and Employment", status: "Đã có" },
   { id: "04", title: "Food and Drink", status: "Đã có" },
-  { id: "05", title: "Consumerism", status: "Nội dung sắp có" },
+  { id: "05", title: "Consumerism", status: "Đã có" },
   { id: "06", title: "Leisure Time", status: "Nội dung sắp có" },
   { id: "07", title: "Fame and the Media", status: "Nội dung sắp có" },
   { id: "08", title: "Natural World", status: "Nội dung sắp có" },

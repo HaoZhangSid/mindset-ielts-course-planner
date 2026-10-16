@@ -27,10 +27,11 @@ import { unit01 } from "./data/unit01.js";
 import { unit02 } from "./data/unit02.js";
 import { unit03, courseUnits } from "./data/unit03.js";
 import { unit04 } from "./data/unit04.js";
+import { unit05 } from "./data/unit05.js";
 import "./styles.css";
 
-const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04 };
-const UnitContext = React.createContext(unit04);
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05 };
+const UnitContext = React.createContext(unit05);
 const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -167,6 +168,7 @@ function Hero() {
     "02": [["P", "places"], ["B", "buildings"], ["C", "cities"], ["S", "spaces"]],
     "03": [["E", "education"], ["W", "work"], ["S", "skills"], ["L", "learning"]],
     "04": [["F", "food"], ["C", "culture"], ["T", "taste"], ["M", "meals"]],
+    "05": [["C", "consumerism"], ["M", "malls"], ["S", "shopping"], ["F", "future"]],
   }[currentUnit.id] || [["L", "learning"], ["S", "skills"], ["T", "training"], ["G", "growth"]];
   return (
     <section className="unit-hero">
@@ -383,8 +385,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
-  const [selectedUnitId, setSelectedUnitId] = useState("04");
-  const currentUnit = unitCatalog[selectedUnitId] || unit04;
+  const [selectedUnitId, setSelectedUnitId] = useState("05");
+  const currentUnit = unitCatalog[selectedUnitId] || unit05;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
