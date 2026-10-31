@@ -28,10 +28,11 @@ import { unit02 } from "./data/unit02.js";
 import { unit03, courseUnits } from "./data/unit03.js";
 import { unit04 } from "./data/unit04.js";
 import { unit05 } from "./data/unit05.js";
+import { unit06 } from "./data/unit06.js";
 import "./styles.css";
 
-const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05 };
-const UnitContext = React.createContext(unit05);
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05, "06": unit06 };
+const UnitContext = React.createContext(unit06);
 const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -169,6 +170,7 @@ function Hero() {
     "03": [["E", "education"], ["W", "work"], ["S", "skills"], ["L", "learning"]],
     "04": [["F", "food"], ["C", "culture"], ["T", "taste"], ["M", "meals"]],
     "05": [["C", "consumerism"], ["M", "malls"], ["S", "shopping"], ["F", "future"]],
+    "06": [["L", "leisure"], ["S", "sports"], ["H", "hobbies"], ["M", "movement"]],
   }[currentUnit.id] || [["L", "learning"], ["S", "skills"], ["T", "training"], ["G", "growth"]];
   return (
     <section className="unit-hero">
@@ -385,8 +387,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
-  const [selectedUnitId, setSelectedUnitId] = useState("05");
-  const currentUnit = unitCatalog[selectedUnitId] || unit05;
+  const [selectedUnitId, setSelectedUnitId] = useState("06");
+  const currentUnit = unitCatalog[selectedUnitId] || unit06;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
@@ -475,12 +477,30 @@ function App() {
       exportNode.style.width = "794px";
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
 
+      let layoutRoot = exportNode;
+      let layoutRootRect;
+      const layoutRects = new WeakMap();
+      const textLineRects = new WeakMap();
+      const captureScale = 1.25;
+      const readTextLines = (element) => {
+        const lines = [];
+        const doc = element.ownerDocument;
+        const walker = doc.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+        while (walker.nextNode()) {
+          if (!walker.currentNode.textContent.trim()) continue;
+          const range = doc.createRange();
+          range.selectNodeContents(walker.currentNode);
+          lines.push(...Array.from(range.getClientRects(), (rect) => ({ top: rect.top, bottom: rect.bottom })));
+        }
+        return lines;
+      };
       const canvas = await html2canvas(exportNode, {
-        scale: 1.25,
+        scale: captureScale,
         useCORS: true,
         backgroundColor: "#fbfaf7",
         logging: false,
-        windowWidth: 794,
+        // Keep the clone's media queries aligned with the measured source.
+        windowWidth: window.innerWidth,
         width: 794,
         onclone: (clonedDocument) => {
           const clonedRoot = clonedDocument.querySelector(".pdf-export-active");
@@ -490,6 +510,16 @@ function App() {
           clonedRoot.style.top = "auto";
           clonedRoot.style.width = "794px";
           clonedRoot.style.zIndex = "auto";
+          // Measure the actual capture document: static positioning, fonts and
+          // margin collapse can change its geometry from the live page.
+          layoutRoot = clonedRoot;
+          layoutRootRect = clonedRoot.getBoundingClientRect();
+          for (const element of clonedRoot.querySelectorAll("*")) {
+            layoutRects.set(element, element.getBoundingClientRect());
+          }
+          for (const element of clonedRoot.querySelectorAll(".data-table-wrap, .callout, .checklist-block, .prose-block, tr, p, .check-item")) {
+            if (layoutRects.get(element).height > 800) textLineRects.set(element, readTextLines(element));
+          }
         },
       });
 
@@ -503,29 +533,90 @@ function App() {
       const contentHeight = pageHeight - margins.top - margins.bottom;
       const pixelsPerPdfInch = canvas.width / contentWidth;
       const sliceHeight = Math.max(1, Math.floor(contentHeight * pixelsPerPdfInch));
-      const rootRect = exportNode.getBoundingClientRect();
-      const captureScale = canvas.width / Math.max(1, rootRect.width);
-      const avoidRects = [...exportNode.querySelectorAll(".pdf-lesson, .lesson-section, .data-table-wrap, .callout, .checklist-block, .integrated-review")]
-        .map((element) => {
-          const rect = element.getBoundingClientRect();
-          return {
-            top: Math.max(0, Math.round((rect.top - rootRect.top) * captureScale)),
-            bottom: Math.min(canvas.height, Math.round((rect.bottom - rootRect.top) * captureScale)),
-          };
-        })
-        .filter((rect) => rect.bottom - rect.top > 8);
-      const safeBreaks = [0, canvas.height, ...avoidRects.flatMap((rect) => [rect.top, rect.bottom])]
-        .filter((point) => point >= 0 && point <= canvas.height)
+      const rootRect = layoutRootRect || exportNode.getBoundingClientRect();
+      const toCaptureRect = (element) => {
+        const rect = layoutRects.get(element) || element.getBoundingClientRect();
+        return {
+          top: Math.max(0, Math.round((rect.top - rootRect.top) * captureScale)),
+          bottom: Math.min(canvas.height, Math.round((rect.bottom - rootRect.top) * captureScale)),
+        };
+      };
+      const protectedRanges = [];
+      const breakPoints = [0, canvas.height];
+      const keepTogether = (rect) => {
+        breakPoints.push(rect.top, rect.bottom);
+        if (rect.bottom - rect.top > 2 && rect.bottom - rect.top <= sliceHeight) protectedRanges.push(rect);
+      };
+      const protectTextLines = (element) => {
+        // An unusually long paragraph or row may exceed A4. Its text lines are
+        // still indivisible, so the emergency break can only fall between lines.
+        for (const rect of textLineRects.get(element) || readTextLines(element)) {
+          keepTogether({
+            top: Math.max(0, Math.floor((rect.top - rootRect.top) * captureScale)),
+            bottom: Math.min(canvas.height, Math.ceil((rect.bottom - rootRect.top) * captureScale)),
+          });
+        }
+      };
+      const blocks = [...layoutRoot.querySelectorAll(".data-table-wrap, .callout, .checklist-block, .prose-block, .teacher-banner, .colour-legend")];
+      for (const block of blocks) {
+        const rect = toCaptureRect(block);
+        if (rect.bottom - rect.top <= sliceHeight) {
+          keepTogether(rect);
+          continue;
+        }
+        breakPoints.push(rect.top, rect.bottom);
+        const parts = [...block.querySelectorAll("tr, p, .check-item")];
+        for (const part of parts) {
+          const partRect = toCaptureRect(part);
+          if (partRect.bottom - partRect.top <= sliceHeight) keepTogether(partRect);
+          else protectTextLines(part);
+        }
+        const firstPart = block.querySelector("tbody tr, p, .check-item");
+        if (firstPart) keepTogether({ top: rect.top, bottom: toCaptureRect(firstPart).bottom });
+        if (!parts.length) protectTextLines(block);
+      }
+      const keepHeadingWithContent = (heading, content, startElement = heading) => {
+        if (!heading || !content) return;
+        const top = toCaptureRect(startElement).top;
+        const contentRect = toCaptureRect(content);
+        if (contentRect.bottom - top <= sliceHeight) {
+          keepTogether({ top, bottom: contentRect.bottom });
+        } else if (contentRect.bottom - contentRect.top > sliceHeight) {
+          const firstPart = content.querySelector("tbody tr, p, .check-item");
+          keepTogether({ top, bottom: firstPart ? toCaptureRect(firstPart).bottom : toCaptureRect(heading).bottom });
+        } else {
+          keepTogether({ top, bottom: toCaptureRect(heading).bottom });
+        }
+      };
+      for (const section of layoutRoot.querySelectorAll(".lesson-section")) {
+        keepHeadingWithContent(section.querySelector(".section-heading"), section.querySelector(".section-body")?.firstElementChild, section);
+      }
+      for (const lesson of layoutRoot.querySelectorAll(".pdf-lesson")) {
+        keepHeadingWithContent(lesson.querySelector(".lesson-header"), lesson.querySelector(".section-body")?.firstElementChild, lesson);
+      }
+      for (const heading of layoutRoot.querySelectorAll(".opening-section-title")) {
+        keepHeadingWithContent(heading, heading.nextElementSibling);
+      }
+      const reviewHeading = layoutRoot.querySelector(".review-heading");
+      keepHeadingWithContent(reviewHeading, layoutRoot.querySelector(".review-section .data-table-wrap"));
+      for (const element of layoutRoot.querySelectorAll(".pdf-lesson, .lesson-section, .lesson-header, .integrated-review")) {
+        const rect = toCaptureRect(element);
+        breakPoints.push(rect.top, rect.bottom);
+      }
+      const contentEnd = blocks.length
+        ? Math.min(canvas.height, Math.max(...blocks.map((block) => toCaptureRect(block).bottom)))
+        : canvas.height;
+      breakPoints.push(contentEnd);
+      const safeBreaks = breakPoints
+        .filter((point) => point >= 0 && point <= contentEnd)
         .sort((left, right) => left - right)
-        .filter((point, index, points) => index === 0 || point !== points[index - 1]);
+        .filter((point, index, points) => index === 0 || point !== points[index - 1])
+        .filter((point) => !protectedRanges.some((rect) => rect.top < point && rect.bottom > point));
       const choosePageEnd = (start, target) => {
-        if (target >= canvas.height) return canvas.height;
-        const spanning = avoidRects
-          .filter((rect) => rect.top < target && rect.bottom > target && rect.top > start + sliceHeight * 0.28)
-          .map((rect) => rect.top);
-        if (spanning.length) return Math.max(...spanning);
-        const previousSafeBreak = safeBreaks.filter((point) => point <= target - 2 && point > start + sliceHeight * 0.35).pop();
-        return previousSafeBreak || target;
+        if (target >= contentEnd) return contentEnd;
+        const end = safeBreaks.filter((point) => point <= target && point > start + 2).pop();
+        if (!end) throw new Error("Unable to find a PDF page break without splitting content");
+        return end;
       };
       const pageCanvas = document.createElement("canvas");
       pageCanvas.width = canvas.width;
@@ -535,11 +626,9 @@ function App() {
 
       let offset = 0;
       let pageNumber = 0;
-      while (offset < canvas.height) {
-        const target = Math.min(canvas.height, offset + sliceHeight);
-        let end = choosePageEnd(offset, target);
-        if (end <= offset + 4) end = target;
-        if (canvas.height - end < sliceHeight * 0.12) end = canvas.height;
+      while (offset < contentEnd) {
+        const target = Math.min(contentEnd, offset + sliceHeight);
+        const end = choosePageEnd(offset, target);
         const sourceHeight = Math.max(1, end - offset);
         pageCanvas.height = sourceHeight;
         pageContext.fillStyle = "#fbfaf7";
