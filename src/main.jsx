@@ -29,10 +29,11 @@ import { unit03, courseUnits } from "./data/unit03.js";
 import { unit04 } from "./data/unit04.js";
 import { unit05 } from "./data/unit05.js";
 import { unit06 } from "./data/unit06.js";
+import { unit07 } from "./data/unit07.js";
 import "./styles.css";
 
-const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05, "06": unit06 };
-const UnitContext = React.createContext(unit06);
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05, "06": unit06, "07": unit07 };
+const UnitContext = React.createContext(unit07);
 const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -171,6 +172,7 @@ function Hero() {
     "04": [["F", "food"], ["C", "culture"], ["T", "taste"], ["M", "meals"]],
     "05": [["C", "consumerism"], ["M", "malls"], ["S", "shopping"], ["F", "future"]],
     "06": [["L", "leisure"], ["S", "sports"], ["H", "hobbies"], ["M", "movement"]],
+    "07": [["F", "fame"], ["M", "media"], ["S", "stories"], ["V", "views"]],
   }[currentUnit.id] || [["L", "learning"], ["S", "skills"], ["T", "training"], ["G", "growth"]];
   return (
     <section className="unit-hero">
@@ -245,11 +247,11 @@ function LessonTabs({ activeLesson, onSelect, isVisible }) {
       {currentUnit.lessons.map((lesson) => {
         const Icon = iconMap[lesson.icon] || BookOpen;
         return (
-          <a key={lesson.id} id={`lesson-tab-${lesson.id}`} role="tab" aria-selected={activeLesson === lesson.id} aria-controls={`lesson-${lesson.id}`} className={`lesson-tab ${activeLesson === lesson.id ? "is-active" : ""}`} href={`#lesson-${lesson.id}`} onClick={(event) => { event.preventDefault(); onSelect(lesson.id); }}>
+          <button type="button" key={lesson.id} id={`lesson-tab-${lesson.id}`} role="tab" aria-selected={activeLesson === lesson.id} aria-controls={`lesson-${lesson.id}`} className={`lesson-tab ${activeLesson === lesson.id ? "is-active" : ""}`} onClick={() => onSelect(lesson.id)}>
             <span className="lesson-tab-icon"><Icon size={17} /></span>
             <span><strong>{lesson.shortTitle}</strong><small>{lesson.exerciseRange}</small></span>
             <ChevronRight className="tab-arrow" size={15} />
-          </a>
+          </button>
         );
       })}
     </div>
@@ -387,8 +389,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
-  const [selectedUnitId, setSelectedUnitId] = useState("06");
-  const currentUnit = unitCatalog[selectedUnitId] || unit06;
+  const [selectedUnitId, setSelectedUnitId] = useState("07");
+  const currentUnit = unitCatalog[selectedUnitId] || unit07;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
@@ -415,7 +417,9 @@ function App() {
       const target = document.getElementById(`lesson-${lessonId}`);
       if (!target) return;
       const top = target.getBoundingClientRect().top + window.scrollY - 104;
-      window.scrollTo({ top: Math.max(0, top), behavior: "smooth" });
+      // Instant positioning keeps the sticky lesson controls reliable while
+      // the scroll listener updates the active lesson during navigation.
+      window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
     });
   };
 

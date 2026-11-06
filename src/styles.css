@@ -122,7 +122,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid #f1ad4f; outline-offs
 .lesson-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin: 24px 0 12px; border: 1px solid var(--ink); position: sticky; top: 82px; z-index: 16; background: #fff; box-shadow: 0 8px 18px rgba(24, 59, 86, .12); transition: transform .22s ease, opacity .22s ease, box-shadow .22s ease; will-change: transform, opacity; }
 .lesson-tabs.is-scroll-hidden { transform: translateY(calc(-100% - 18px)); opacity: 0; pointer-events: none; box-shadow: none; }
 .lesson-tabs.is-scroll-visible { transform: translateY(0); opacity: 1; pointer-events: auto; }
-.lesson-tab { display: flex; align-items: center; gap: 9px; min-width: 0; text-align: left; padding: 10px 12px; color: var(--ink); background: #fff; border-right: 1px solid var(--ink); border-radius: 0; text-decoration: none; transition: background .2s ease, color .2s ease; }
+.lesson-tab { display: flex; align-items: center; gap: 9px; min-width: 0; text-align: left; padding: 10px 12px; color: var(--ink); background: #fff; border: 0; border-right: 1px solid var(--ink); border-radius: 0; font: inherit; cursor: pointer; transition: background .2s ease, color .2s ease; }
 .lesson-tab:last-child { border-right: 0; }
 .lesson-tab:hover { background: var(--blue-wash); }
 .lesson-tab.is-active { color: #fff; background: var(--ink); box-shadow: none; }
