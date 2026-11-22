@@ -6,7 +6,7 @@ export const courseUnits = [
   { id: "05", title: "Consumerism", status: "Đã có" },
   { id: "06", title: "Leisure Time", status: "Đã có" },
   { id: "07", title: "Fame and the Media", status: "Đã có" },
-  { id: "08", title: "Natural World", status: "Nội dung sắp có" },
+  { id: "08", title: "Natural World", status: "Đã có" },
 ];
 
 const t = (label, headers, rows, extra = {}) => ({ type: "table", label, headers, rows, ...extra });

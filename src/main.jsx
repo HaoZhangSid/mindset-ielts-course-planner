@@ -30,10 +30,11 @@ import { unit04 } from "./data/unit04.js";
 import { unit05 } from "./data/unit05.js";
 import { unit06 } from "./data/unit06.js";
 import { unit07 } from "./data/unit07.js";
+import { unit08 } from "./data/unit08.js";
 import "./styles.css";
 
-const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05, "06": unit06, "07": unit07 };
-const UnitContext = React.createContext(unit07);
+const unitCatalog = { "01": unit01, "02": unit02, "03": unit03, "04": unit04, "05": unit05, "06": unit06, "07": unit07, "08": unit08 };
+const UnitContext = React.createContext(unit08);
 const useCurrentUnit = () => React.useContext(UnitContext);
 
 const iconMap = { BookOpen, FileText, Lightbulb, Target, Sparkles, GraduationCap };
@@ -173,6 +174,7 @@ function Hero() {
     "05": [["C", "consumerism"], ["M", "malls"], ["S", "shopping"], ["F", "future"]],
     "06": [["L", "leisure"], ["S", "sports"], ["H", "hobbies"], ["M", "movement"]],
     "07": [["F", "fame"], ["M", "media"], ["S", "stories"], ["V", "views"]],
+    "08": [["N", "nature"], ["W", "wildlife"], ["H", "habitats"], ["C", "conservation"]],
   }[currentUnit.id] || [["L", "learning"], ["S", "skills"], ["T", "training"], ["G", "growth"]];
   return (
     <section className="unit-hero">
@@ -271,9 +273,11 @@ function LessonHeader({ lesson }) {
   );
 }
 
+const teacherNotePattern = /Teacher|Cách xử lý|Common errors|Answer diagnosis|Lỗi học viên|Câu hỏi feedback|Quy trình|Chiến lược|Lưu ý|Pronunciation focus|Grammar checkpoint|Extension|Feedback questions|Error clinic|Typical exam errors|Distractor clinic|strategy|drill|Sequencing check|Writing architecture/i;
+
 function Callout({ block, showNotes }) {
   const Icon = iconMap[block.icon] || Lightbulb;
-  const isTeacherOnly = block.teacherOnly || /Teacher talk|Teacher move|Teacher prompts/i.test(block.label || "");
+  const isTeacherOnly = block.teacherOnly || teacherNotePattern.test(block.label || "");
   if (isTeacherOnly && !showNotes) return null;
   const inferredTone = /model/i.test(block.label || "") ? "green" : /error/i.test(block.label || "") ? "red" : (block.tone || "yellow");
   return (
@@ -300,7 +304,8 @@ function DataTable({ block }) {
   );
 }
 
-function Checklist({ block }) {
+function Checklist({ block, showNotes }) {
+  if (!showNotes) return null;
   return (
     <div className="checklist-block">
       <div className="table-caption"><span>{localizeLabel(block.label)}</span><small>{block.note}</small></div>
@@ -312,7 +317,7 @@ function Checklist({ block }) {
 function LessonBlock({ block, showNotes }) {
   if (block.type === "callout") return <Callout block={block} showNotes={showNotes} />;
   if (block.type === "table") return <DataTable block={block} />;
-  if (block.type === "checklist") return <Checklist block={block} />;
+  if (block.type === "checklist") return <Checklist block={block} showNotes={showNotes} />;
   if (block.type === "teacher") return showNotes ? <Callout block={{ ...block, type: "callout", tone: "yellow", teacherOnly: true, icon: "Lightbulb" }} showNotes /> : null;
   if (block.type === "text") return <div className="prose-block" dangerouslySetInnerHTML={{ __html: block.html }} />;
   return null;
@@ -389,8 +394,8 @@ function ExportDocument({ exportRef }) {
 }
 
 function App() {
-  const [selectedUnitId, setSelectedUnitId] = useState("07");
-  const currentUnit = unitCatalog[selectedUnitId] || unit07;
+  const [selectedUnitId, setSelectedUnitId] = useState("08");
+  const currentUnit = unitCatalog[selectedUnitId] || unit08;
   const [activeLesson, setActiveLesson] = useState("reading");
   const [lessonTabsVisible, setLessonTabsVisible] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
@@ -695,4 +700,6 @@ function App() {
   );
 }
 
-createRoot(document.getElementById("root")).render(<App />);
+const root = import.meta.hot?.data?.root || createRoot(document.getElementById("root"));
+root.render(<App />);
+if (import.meta.hot) import.meta.hot.data.root = root;
